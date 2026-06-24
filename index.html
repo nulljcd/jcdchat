@@ -3,14 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>jcdchat</title>
+    <title>jcdchat; id: ??????</title>
     <style>
         html {
             height: 100%;
+            background-color: #323348;
         }
+
         body {
             margin: 0;
-            height: 100%;
+            padding: 10px;
+            height: calc(100% - 20px);
+        }
+
+        #main-messages-container {
+            width: 100%;
+            height: calc(100% - 30px);
+            margin-bottom: 10px;
+            overflow-y: scroll;
+        }
+
+        .message {
+            width: 100%;
+            display: flex;
+        }
+        
+        .message-id {
+            margin-right: 10px;
+            flex-grow: 0;
+            font-family: monospace;
+            font-size: 14px;
+            color: #d9b7d8;
+            cursor: default;
+        }
+
+        .message-value {
+            margin-right: 10px;
+            flex-grow: 1;
+            font-family: monospace;
+            font-size: 14px;
+            color: #fff;
+            cursor: default;
         }
 
         #input {
@@ -22,15 +55,25 @@
             height: 20px;
             cursor: default;
             font-family: monospace;
+            font-size: 14px;
+            background-color: #323348;
+            color: #fff;
         }
     </style>
 </head>
 
 <body>
+    <div id="main-messages-container">
+        <div id="messages-container">
+            <div class="message">
+                <div class="message-id">SYSTEM:</div>
+                <div class="message-value">Welcome to jcdchat! A simple, anonymous, amnesic chat room with no censorship. <br> Start typing any message and press Enter to send it!</div>
+            </div>
+        </div>
+        <div id="messages-container-scroll-target"></div>
+    </div>
     <input type="text" id="input">
     <script type="module">
-        // https://console.cloud.google.com/apis/credentials
-
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
         import {
             getAuth,
@@ -39,7 +82,15 @@
             signOut,
             onAuthStateChanged,
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-        import { getDatabase, ref, set, update, remove, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+        import {
+            getDatabase,
+            ref,
+            set,
+            update,
+            remove,
+            onValue,
+            onDisconnect,
+        } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDBKLagVjAqJymEkLMKaJvfbep_TUPD9S0",
@@ -56,64 +107,68 @@
         const auth = getAuth();
         const database = getDatabase();
 
-        // if (!auth.currentUser)
-        //     signInAnonymously(auth);
-
         let userId, usersRef, userRef;
         let lastSnappedUsersData = {};
-        let userData = "a";
+        let userData = {
+            updateFlag: false,
+            message: "",
+        };
 
-        let isActive = true;
-        let inactivityCounter = 0;
-        let pendingMessage = "";
-
-        let input = document.querySelector("#input");
+        let waitFlag = false;
+        let sendMessageFlag = false;
+        let lastTimeNoWait = null;
+        let errorFlag = false;
+        let htmlMessagesContainer = document.querySelector("#messages-container");
+        let htmlInput = document.querySelector("#input");
 
         window.addEventListener('keydown', e => {
-            input.focus();
+            htmlInput.focus();
 
             if (e.key == "Enter") {
                 e.preventDefault();
 
-                if (isActive) {   
-                    pendingMessage = input.value;
-                    input.value = "";
+                if (!sendMessageFlag && htmlInput.value != "") {
+                    sendMessageFlag = true;
+                    userData.message = htmlInput.value;
+
+                    htmlInput.value = "";
                 }
             }
         }, true);
 
         function run() {
-            if (auth.currentUser) {
-                if (inactivityCounter == 30 * 60) {
-                    remove(userRef);
-                }
-
-                inactivityCounter++;
-            }
-
-            if (isActive) {
-                if (pendingMessage != "") {
+            if (!errorFlag) {
+                if (!waitFlag) {
                     if (auth.currentUser) {
-                        userData = userData[0] == "a"? "b" : "a";
-                        userData += pendingMessage;
-
-                        if (!lastSnappedUsersData[userId]) {
-                            isActive = false;
-                            set(userRef, userData);
-                        } else {
-                            isActive = false;
-                            let updateData = {};
-                            updateData[userId] = userData;
-                            update(usersRef, updateData);
+                        if (sendMessageFlag) {
+                            if (!lastSnappedUsersData[userId]) {
+                                waitFlag = true;
+                                set(userRef, userData).then(() => waitFlag = false);
+                            } else {
+                                waitFlag = true;
+                                userData.updateFlag = !userData.updateFlag;
+                                update(userRef, userData).then(() => {
+                                    waitFlag = false;
+                                    sendMessageFlag = false;
+                                });
+                            }
                         }
                     } else {
-                        isActive = false;
-                        signInAnonymously(auth);
+                        waitFlag = true;
+                        signInAnonymously(auth).then(() => waitFlag = false);
+                    }
+                    lastTimeNoWait = Date.now();
+                } else {
+                    if (Date.now() - lastTimeNoWait > 5000) {
+                        errorFlag = true;
                     }
                 }
+                requestAnimationFrame(run);
+            } else {
+                remove(userRef).catch(() => { }).then(() => {
+                    alert("Error. Page will be disabled until reloaded.");
+                });
             }
-
-            requestAnimationFrame(run);
         }
 
         run();
@@ -124,8 +179,7 @@
                 usersRef = ref(database, "users")
                 userRef = ref(database, "users/" + userId);
 
-                console.log("user signed in");
-                console.log("   userId: ", userId);
+                document.title = "jcdchat; id: " + userId.substring(0, 6);
 
                 onDisconnect(userRef).remove();
 
@@ -133,14 +187,25 @@
                     let snappedUsersData = snapshot.val();
 
                     if (snappedUsersData) {
-                        if (snappedUsersData[userId] && !lastSnappedUsersData[userId] || snappedUsersData[userId] != lastSnappedUsersData[userId]) {
-                            pendingMessage = "";
-                            isActive = true;
-                        }
-
                         for (const [snappedUserId, snappedUserData] of Object.entries(snappedUsersData)) {
-                            if (snappedUsersData[snappedUserId] != lastSnappedUsersData[snappedUserId]) {
-                                console.log(snappedUserData);
+                            let lastSnappedUserData = lastSnappedUsersData[snappedUserId];
+
+                            if (lastSnappedUserData != null && lastSnappedUserData.updateFlag != snappedUserData.updateFlag) {
+                                let htmlMessage = document.createElement("div");
+                                let htmlMessageId = document.createElement("div");
+                                let htmlMessageValue = document.createElement("div");
+
+                                htmlMessage.classList.add("message");
+                                htmlMessageId.classList.add("message-id");
+                                htmlMessageValue.classList.add("message-value");
+
+                                htmlMessageId.innerText = snappedUserId.substring(0, 6) + ":";
+                                htmlMessageValue.innerText = snappedUserData.message;
+
+                                htmlMessage.appendChild(htmlMessageId);
+                                htmlMessage.appendChild(htmlMessageValue);
+
+                                htmlMessagesContainer.appendChild(htmlMessage);
                             }
                         }
                         lastSnappedUsersData = snappedUsersData;
@@ -148,8 +213,6 @@
                         lastSnappedUsersData = {};
                     }
                 });
-            } else {
-                console.log("user signed out");
             }
         });
     </script>
