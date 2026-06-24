@@ -1,0 +1,158 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jcdchat</title>
+    <style>
+        html {
+            height: 100%;
+        }
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        #input {
+            margin: 0;
+            border: none;
+            padding: 0;
+            outline: none;
+            width: 100%;
+            height: 20px;
+            cursor: default;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <input type="text" id="input">
+    <script type="module">
+        // https://console.cloud.google.com/apis/credentials
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import {
+            getAuth,
+            signInAnonymously,
+            connectAuthEmulator,
+            signOut,
+            onAuthStateChanged,
+        } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+        import { getDatabase, ref, set, update, remove, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDBKLagVjAqJymEkLMKaJvfbep_TUPD9S0",
+            authDomain: "project-7461927070501805311.firebaseapp.com",
+            databaseURL: "https://project-7461927070501805311-default-rtdb.firebaseio.com",
+            projectId: "project-7461927070501805311",
+            storageBucket: "project-7461927070501805311.firebasestorage.app",
+            messagingSenderId: "117048132520",
+            appId: "1:117048132520:web:62f45feb23dede3aae939d"
+        };
+
+        initializeApp(firebaseConfig);
+
+        const auth = getAuth();
+        const database = getDatabase();
+
+        // if (!auth.currentUser)
+        //     signInAnonymously(auth);
+
+        let userId, usersRef, userRef;
+        let lastSnappedUsersData = {};
+        let userData = "a";
+
+        let isActive = true;
+        let inactivityCounter = 0;
+        let pendingMessage = "";
+
+        let input = document.querySelector("#input");
+
+        window.addEventListener('keydown', e => {
+            input.focus();
+
+            if (e.key == "Enter") {
+                e.preventDefault();
+
+                if (isActive) {   
+                    pendingMessage = input.value;
+                    input.value = "";
+                }
+            }
+        }, true);
+
+        function run() {
+            if (auth.currentUser) {
+                if (inactivityCounter == 30 * 60) {
+                    remove(userRef);
+                }
+
+                inactivityCounter++;
+            }
+
+            if (isActive) {
+                if (pendingMessage != "") {
+                    if (auth.currentUser) {
+                        userData = userData[0] == "a"? "b" : "a";
+                        userData += pendingMessage;
+
+                        if (!lastSnappedUsersData[userId]) {
+                            isActive = false;
+                            set(userRef, userData);
+                        } else {
+                            isActive = false;
+                            let updateData = {};
+                            updateData[userId] = userData;
+                            update(usersRef, updateData);
+                        }
+                    } else {
+                        isActive = false;
+                        signInAnonymously(auth);
+                    }
+                }
+            }
+
+            requestAnimationFrame(run);
+        }
+
+        run();
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                userId = user.uid;
+                usersRef = ref(database, "users")
+                userRef = ref(database, "users/" + userId);
+
+                console.log("user signed in");
+                console.log("   userId: ", userId);
+
+                onDisconnect(userRef).remove();
+
+                onValue(usersRef, snapshot => {
+                    let snappedUsersData = snapshot.val();
+
+                    if (snappedUsersData) {
+                        if (snappedUsersData[userId] && !lastSnappedUsersData[userId] || snappedUsersData[userId] != lastSnappedUsersData[userId]) {
+                            pendingMessage = "";
+                            isActive = true;
+                        }
+
+                        for (const [snappedUserId, snappedUserData] of Object.entries(snappedUsersData)) {
+                            if (snappedUsersData[snappedUserId] != lastSnappedUsersData[snappedUserId]) {
+                                console.log(snappedUserData);
+                            }
+                        }
+                        lastSnappedUsersData = snappedUsersData;
+                    } else {
+                        lastSnappedUsersData = {};
+                    }
+                });
+            } else {
+                console.log("user signed out");
+            }
+        });
+    </script>
+</body>
+
+</html>
