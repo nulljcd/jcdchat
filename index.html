@@ -27,7 +27,7 @@
             width: 100%;
             display: flex;
         }
-        
+
         .message-id {
             margin-right: 10px;
             flex-grow: 0;
@@ -67,7 +67,9 @@
         <div id="messages-container">
             <div class="message">
                 <div class="message-id">SYSTEM:</div>
-                <div class="message-value">Welcome to jcdchat. <br><br> Anonymous. Amnesic. Instant. <br><br> - No accounts. <br> - No names. <br> - No history. <br> - No setup. <br><br> The room remembers nothing. Messages only exist while people are here to see them. <br><br> Start typing and press Enter.</div>
+                <div class="message-value">Welcome to jcdchat. <br><br> Anonymous. Amnesic. Instant. <br><br> - No
+                    accounts. <br> - No names. <br> - No history. <br> - No setup. <br><br> The room remembers nothing.
+                    Messages only exist while people are here to see them. <br><br> Start typing and press Enter.</div>
             </div>
         </div>
         <div id="messages-container-scroll-target"></div>
@@ -85,6 +87,7 @@
         import {
             getDatabase,
             ref,
+            get,
             set,
             update,
             remove,
@@ -107,6 +110,8 @@
         const auth = getAuth();
         const database = getDatabase();
 
+        let promptedCode = prompt("code: ");
+
         let userId, usersRef, userRef;
         let lastSnappedUsersData = {};
         let userData = {
@@ -122,16 +127,18 @@
         let htmlInput = document.querySelector("#input");
 
         window.addEventListener('keydown', e => {
-            htmlInput.focus();
+            if (!errorFlag) {
+                htmlInput.focus();
 
-            if (e.key == "Enter") {
-                e.preventDefault();
+                if (e.key == "Enter") {
+                    e.preventDefault();
 
-                if (!sendMessageFlag && htmlInput.value != "") {
-                    sendMessageFlag = true;
-                    userData.message = htmlInput.value;
+                    if (!sendMessageFlag && htmlInput.value != "") {
+                        sendMessageFlag = true;
+                        userData.message = htmlInput.value;
 
-                    htmlInput.value = "";
+                        htmlInput.value = "";
+                    }
                 }
             }
         }, true);
@@ -176,10 +183,16 @@
         onAuthStateChanged(auth, user => {
             if (user) {
                 userId = user.uid;
-                usersRef = ref(database, "users")
+                usersRef = ref(database, "users");
                 userRef = ref(database, "users/" + userId);
 
                 document.title = "jcdchat; id: " + userId.substring(0, 6);
+
+                get(ref(database, "code")).then((snapshot) => {
+                    if (snapshot.val() != null && promptedCode != snapshot.val()) {
+                        errorFlag = true;
+                    }
+                });
 
                 onDisconnect(userRef).remove();
 
