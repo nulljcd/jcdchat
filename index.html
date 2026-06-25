@@ -33,7 +33,6 @@
             flex-grow: 0;
             font-family: monospace;
             font-size: 14px;
-            color: #d9b7d8;
             cursor: default;
         }
 
@@ -66,10 +65,8 @@
     <div id="main-messages-container">
         <div id="messages-container">
             <div class="message">
-                <div class="message-id">SYSTEM:</div>
-                <div class="message-value">Welcome to jcdchat. <br><br> Anonymous. Amnesic. Instant. <br><br> - No
-                    accounts. <br> - No names. <br> - No history. <br> - No setup. <br><br> The room remembers nothing.
-                    Messages only exist while people are here to see them. <br><br> Start typing and press Enter.</div>
+                <div class="message-id" style="color: #d9b7d8;">SYSTEM:</div>
+                <div class="message-value">Welcome to jcdchat.</div>
             </div>
         </div>
         <div id="messages-container-scroll-target"></div>
@@ -121,6 +118,34 @@
         let sendMessageFlag = false;
         let lastTimeNoWait = null;
         let errorFlag = false;
+
+        let userIdColors = {};
+
+        function lerp(start, end, amount) {
+            return start * (1 - amount) + end * amount;
+        }
+
+        function randomColor() {
+            let h = Math.Random();
+            let l = lerp(0.7, 0.8, Math.Random());
+
+            const q = l < 0.5 ? l * 1 : l + 1 - l;
+            const p = 2 * l - q;
+            let r = hueToRgb(p, q, h + 1 / 3);
+            let g = hueToRgb(p, q, h);
+            let b = hueToRgb(p, q, h - 1 / 3);
+
+            return `rgb(${round(r * 255)}, ${round(g * 255)}, ${round(b * 255)})`;
+        }
+
+        function hueToRgb(p, q, t) {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        }
 
         window.addEventListener('keydown', e => {
             if (!errorFlag) {
@@ -199,6 +224,10 @@
 
                     if (snappedUsersData) {
                         for (const [snappedUserId, snappedUserData] of Object.entries(snappedUsersData)) {
+                            if (!userIdColors[snappedUserId]) {
+                                userIdColors[snappedUserId] = randomColor();
+                            }
+
                             let lastSnappedUserData = lastSnappedUsersData[snappedUserId];
 
                             if (lastSnappedUserData != null && lastSnappedUserData.updateFlag != snappedUserData.updateFlag) {
@@ -213,11 +242,13 @@
                                 htmlMessageId.innerText = snappedUserId.substring(0, 6) + ":";
                                 htmlMessageValue.innerText = snappedUserData.message;
 
+                                htmlMessageId.style.color = userIdColors[snappedUserId];
+
                                 htmlMessage.appendChild(htmlMessageId);
                                 htmlMessage.appendChild(htmlMessageValue);
 
                                 document.querySelector("#messages-container").appendChild(htmlMessage);
-                                
+
                                 document.querySelector("#messages-container-scroll-target").scrollIntoView();
                             }
                         }
