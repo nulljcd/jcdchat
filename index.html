@@ -110,8 +110,6 @@
         const auth = getAuth();
         const database = getDatabase();
 
-        let promptedCode = prompt("code: ");
-
         let userId, usersRef, userRef;
         let lastSnappedUsersData = {};
         let userData = {
@@ -189,7 +187,7 @@
                 document.title = "jcdchat; id: " + userId.substring(0, 6);
 
                 get(ref(database, "code")).then((snapshot) => {
-                    if (snapshot.val() != null && promptedCode != snapshot.val()) {
+                    if (snapshot.val() != null && snapshot.val() != prompt("code: ")) {
                         errorFlag = true;
                     }
                 });
