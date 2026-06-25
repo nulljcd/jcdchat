@@ -65,9 +65,8 @@
     <div id="main-messages-container">
         <div id="messages-container">
             <div class="message">
-                <div class="message-id" style="color: #aaa;">SYSTEM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                </div>
-                <div class="message-value">Welcome to jcdchat.</div>
+                <div class="message-id" style="color: #aaa;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SYSTEM</div>
+                <div class="message-value">Welcome to jcdchat!<br><br>u gotta figure it out son</div>
             </div>
         </div>
         <div id="messages-container-scroll-target"></div>
@@ -176,7 +175,7 @@
 
                                 htmlMessageId.innerText = "SYSTEM";
                                 for (let i = 0; i < 14 - 6; i++) {
-                                    htmlMessageId.innerHTML += "&nbsp;";
+                                    htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
                                 }
                                 htmlMessageValue.innerText = `Name changed to: ${userData.name}`;
 
@@ -288,7 +287,7 @@
                                 htmlMessageIdName.innerText = `${snappedUserData.name}`;
                                 htmlMessageIdUserId.innerText = `[${snappedUserId.substring(0, 4)}]`;
                                 for (let i = 0; i < 14 - 6 - snappedUserData.name.length; i++) {
-                                    htmlMessageIdUserId.innerHTML += "&nbsp;";
+                                    htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
                                 }
                                 htmlMessageValue.innerText = snappedUserData.message;
 
