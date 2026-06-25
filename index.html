@@ -123,21 +123,19 @@
         let sendMessageFlag = false;
         let lastTimeNoWait = null;
         let errorFlag = false;
-        let htmlMessagesContainer = document.querySelector("#messages-container");
-        let htmlInput = document.querySelector("#input");
 
         window.addEventListener('keydown', e => {
             if (!errorFlag) {
-                htmlInput.focus();
+                document.querySelector("#input").focus();
 
                 if (e.key == "Enter") {
                     e.preventDefault();
 
-                    if (!sendMessageFlag && htmlInput.value != "") {
+                    if (!sendMessageFlag && document.querySelector("#input").value != "") {
                         sendMessageFlag = true;
-                        userData.message = htmlInput.value;
+                        userData.message = document.querySelector("#input").value;
 
-                        htmlInput.value = "";
+                        document.querySelector("#input").value = "";
                     }
                 }
             }
@@ -218,7 +216,9 @@
                                 htmlMessage.appendChild(htmlMessageId);
                                 htmlMessage.appendChild(htmlMessageValue);
 
-                                htmlMessagesContainer.appendChild(htmlMessage);
+                                document.querySelector("#messages-container").appendChild(htmlMessage);
+                                
+                                document.querySelector("#messages-container-scroll-target").scrollIntoView();
                             }
                         }
                         lastSnappedUsersData = snappedUsersData;
