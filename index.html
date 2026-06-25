@@ -65,7 +65,7 @@
     <div id="main-messages-container">
         <div id="messages-container">
             <div class="message">
-                <div class="message-id" style="color: #aaa;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SYSTEM
+                <div class="message-id" style="color: #aaa;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SYSTEM
                 </div>
                 <div class="message-value">
                     Welcome to jcdchat: a simple anonymous chat room.<br>
@@ -85,7 +85,7 @@
                     - Tap Go to send.<br>
                     <br>
                     Commands:<br>
-                    - /name NewName - Change your display name.<br>
+                    - /name NewName - Change your display name (up to 6 characters long).<br>
                     - /clear - Clear your local chat log.<br>
                 </div>
             </div>
@@ -184,7 +184,7 @@
                             if (command == "name") {
                                 let argument = splitValue.join(" ");
 
-                                userData.name = argument.length > 8 ? argument.substring(0, 8) : argument;
+                                userData.name = argument.length > 6 ? argument.substring(0, 6) : argument;
 
                                 let htmlMessage = document.createElement("div");
                                 let htmlMessageId = document.createElement("div");
@@ -195,7 +195,7 @@
                                 htmlMessageValue.classList.add("message-value");
 
                                 htmlMessageId.innerText = "SYSTEM";
-                                for (let i = 0; i < 14 - 6; i++) {
+                                for (let i = 0; i < 12 - 6; i++) {
                                     htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
                                 }
                                 htmlMessageValue.innerText = `Name changed to: ${userData.name}`;
@@ -307,7 +307,7 @@
 
                                 htmlMessageIdName.innerText = `${snappedUserData.name}`;
                                 htmlMessageIdUserId.innerText = `[${snappedUserId.substring(0, 4)}]`;
-                                for (let i = 0; i < 14 - 6 - snappedUserData.name.length; i++) {
+                                for (let i = 0; i < 12 - 6 - snappedUserData.name.length; i++) {
                                     htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
                                 }
                                 htmlMessageValue.innerText = snappedUserData.message;
