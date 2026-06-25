@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0">
-    <title>jcdchat; id: ??????</title>
+    <title>jcdchat</title>
     <style>
         html {
             height: 100%;
@@ -65,7 +65,8 @@
     <div id="main-messages-container">
         <div id="messages-container">
             <div class="message">
-                <div class="message-id" style="color: #aaa;">SYSTEM:</div>
+                <div class="message-id" style="color: #aaa;">SYSTEM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </div>
                 <div class="message-value">Welcome to jcdchat.</div>
             </div>
         </div>
@@ -112,6 +113,7 @@
         let userData = {
             updateFlag: false,
             message: "",
+            name: "",
         };
 
         let waitFlag = false;
@@ -155,16 +157,60 @@
                     e.preventDefault();
 
                     if (!sendMessageFlag && document.querySelector("#input").value != "") {
-                        document.querySelector("#input").blur();
+                        if (document.querySelector("#input").value[0] == "/") {
+                            let splitValue = document.querySelector("#input").value.substring(1).split(" ");
+                            let command = splitValue.shift();
 
-                        sendMessageFlag = true;
-                        userData.message = document.querySelector("#input").value;
+                            if (command == "name") {
+                                let argument = splitValue.join(" ");
 
-                        document.querySelector("#input").value = "";
+                                userData.name = argument.length > 8 ? argument.substring(0, 8) : argument;
+
+                                let htmlMessage = document.createElement("div");
+                                let htmlMessageId = document.createElement("div");
+                                let htmlMessageValue = document.createElement("div");
+
+                                htmlMessage.classList.add("message");
+                                htmlMessageId.classList.add("message-id");
+                                htmlMessageValue.classList.add("message-value");
+
+                                htmlMessageId.innerText = "SYSTEM";
+                                for (let i = 0; i < 14 - 6; i++) {
+                                    htmlMessageId.innerHTML += "&nbsp;";
+                                }
+                                htmlMessageValue.innerText = `Name changed to: ${userData.name}`;
+
+                                htmlMessageId.style.color = "#aaa";
+
+                                htmlMessage.appendChild(htmlMessageId);
+                                htmlMessage.appendChild(htmlMessageValue);
+
+                                document.querySelector("#messages-container").appendChild(htmlMessage);
+                                document.querySelector("#messages-container-scroll-target").scrollIntoView();
+
+                                document.querySelector("#input").blur();
+                                document.querySelector("#input").value = "";
+                            } else if (command == "clear") {
+                                document.querySelector("#messages-container").replaceChildren();
+
+                                document.querySelector("#input").blur();
+                                document.querySelector("#input").value = "";
+                            }
+                        } else {
+                            sendMessageFlag = true;
+                            userData.message = document.querySelector("#input").value;
+
+                            document.querySelector("#input").blur();
+                            document.querySelector("#input").value = "";
+                        }
                     }
                 }
             }
         }, true);
+
+        document.querySelector("#input").addEventListener("input", (event) => {
+            document.querySelector("#input").value = document.querySelector("#input").value.replace(/[^\x20-\x7E]/g, '');
+        });
 
         function run() {
             if (!errorFlag) {
@@ -207,9 +253,7 @@
             if (user) {
                 userId = user.uid;
                 usersRef = ref(database, "users");
-                userRef = ref(database, "users/" + userId);
-
-                document.title = "jcdchat; id: " + userId.substring(0, 6);
+                userRef = ref(database, `users/${userId}`);
 
                 get(ref(database, "code")).then((snapshot) => {
                     if (snapshot.val() != null && snapshot.val() != prompt("code: ")) {
@@ -233,22 +277,31 @@
                             if (lastSnappedUserData != null && lastSnappedUserData.updateFlag != snappedUserData.updateFlag) {
                                 let htmlMessage = document.createElement("div");
                                 let htmlMessageId = document.createElement("div");
+                                let htmlMessageIdName = document.createElement("div");
+                                let htmlMessageIdUserId = document.createElement("div");
                                 let htmlMessageValue = document.createElement("div");
 
                                 htmlMessage.classList.add("message");
                                 htmlMessageId.classList.add("message-id");
                                 htmlMessageValue.classList.add("message-value");
 
-                                htmlMessageId.innerText = snappedUserId.substring(0, 6) + ":";
+                                htmlMessageIdName.innerText = `${snappedUserData.name}`;
+                                htmlMessageIdUserId.innerText = `[${snappedUserId.substring(0, 4)}]`;
+                                for (let i = 0; i < 14 - 6 - snappedUserData.name.length; i++) {
+                                    htmlMessageIdUserId.innerHTML += "&nbsp;";
+                                }
                                 htmlMessageValue.innerText = snappedUserData.message;
 
-                                htmlMessageId.style.color = userIdColors[snappedUserId];
+                                htmlMessageId.style.display = "flex";
+                                htmlMessageIdName.style.color = userIdColors[snappedUserId];
+                                htmlMessageIdUserId.style.color = "#757ab2";
 
+                                htmlMessageId.appendChild(htmlMessageIdName);
+                                htmlMessageId.appendChild(htmlMessageIdUserId);
                                 htmlMessage.appendChild(htmlMessageId);
                                 htmlMessage.appendChild(htmlMessageValue);
 
                                 document.querySelector("#messages-container").appendChild(htmlMessage);
-
                                 document.querySelector("#messages-container-scroll-target").scrollIntoView();
                             }
                         }
