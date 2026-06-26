@@ -1,2 +1,2 @@
 # jcdchat
-My custom chat room.
+My little chat room.
