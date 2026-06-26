@@ -150,6 +150,7 @@
         let errorFlag = false;
 
         let userIdColorList = [];
+        let userIdColorIndex = 0;
 
         let userIdColors = {};
         let blockedUserIds = {};
@@ -168,7 +169,9 @@
         }
 
         function randomColor() {
-            return userIdColorList.pop();
+            let color = userIdColorList[userIdColorIndex];
+            userIdColorIndex++;
+            return color;
         }
 
         function hueToRgb(p, q, t) {
