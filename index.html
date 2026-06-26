@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>jcdchat</title>
     <style>
         html {
@@ -121,7 +121,7 @@
             name: "anon",
         };
 
-        let lastCode;
+        let lastCode = null;
 
         let waitFlag = false;
         let sendMessageFlag = false;
@@ -180,8 +180,7 @@
             htmlMessage.appendChild(htmlMessageId);
             htmlMessage.appendChild(htmlMessageValue);
 
-            document.querySelector("#messages-container").appendChild(htmlMessage);
-            document.querySelector("#messages-container-scroll-target").scrollIntoView();
+            appendMessage(htmlMessage);
         }
 
         function pushUserMessage(snappedUserId, snappedUserData) {
@@ -212,8 +211,24 @@
             htmlMessage.appendChild(htmlMessageId);
             htmlMessage.appendChild(htmlMessageValue);
 
+            appendMessage(htmlMessage);
+        }
+
+        function appendMessage(htmlMessage) {
+            const container = document.querySelector("#main-messages-container");
+            const autoScroll =
+                container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+
             document.querySelector("#messages-container").appendChild(htmlMessage);
-            document.querySelector("#messages-container-scroll-target").scrollIntoView();
+
+            if (autoScroll) {
+                document.querySelector("#messages-container-scroll-target").scrollIntoView();
+            }
+        }
+
+        function clearInput() {
+            document.querySelector("#input").blur();
+            document.querySelector("#input").value = "";
         }
 
         function setup() {
@@ -233,7 +248,7 @@
             }
             shuffleArray(userIdColorList);
 
-            pushSystemMessage("Welcome to jcdchat: a barebones chat room.\n\nNo accounts. No message history. No censorship.\n\nCHAT USER IDENTIFICATION:\nUsers are displayed with their chosen name in a random color (same user is different color ondifferent instances), and their 5 character user id in dark gray.\nAll users start with their name as 'anon', and new names can only be up to 6 characters long.\n\nDESKTOP INSTRUCTIONS:\n- type your message.\n- Press Enter to send.\n\nMOBILE INSTRUCTIONS:\n- Tap bottom bar\n- Type your message.\n- Tap Go to send.\n\nCOMMANDS:\n- /name [new_name]\n- /block [user_id]\n- /unblock [user_id]\n- /clear\n");
+            pushSystemMessage("Welcome to jcdchat: a barebones chat room.\n\nNo accounts. No message history. No censorship.\n\nCHAT USER IDENTIFICATION:\nUsers are displayed with their chosen name in a random color (same user is different color in different instances), and their 5 character user id in dark gray.\nAll users start with their name as 'anon', and new names can only be up to 6 characters long.\n\nDESKTOP INSTRUCTIONS:\n- type your message.\n- Press Enter to send.\n\nMOBILE INSTRUCTIONS:\n- Tap bottom bar\n- Type your message.\n- Tap Go to send.\n\nCOMMANDS:\n- /name [new_name]\n- /block [user_id]\n- /unblock [user_id]\n- /clear\n");
         }
 
         document.querySelector("#input").addEventListener("input", (event) => {
@@ -255,12 +270,19 @@
                             if (command == "name") {
                                 let argument = splitValue.join(" ");
 
-                                userData.name = argument.length > 6 ? argument.substring(0, 6) : argument;
+                                let message;
 
-                                pushSystemMessage(`Name changed to: ${userData.name}`)
+                                if (argument.length == 0) {
+                                    message = "Name not changed; new name has to have at least 1 character.";
+                                } else {
+                                    userData.name = argument.length > 6 ? argument.substring(0, 6) : argument;
 
-                                document.querySelector("#input").blur();
-                                document.querySelector("#input").value = "";
+                                    message = `Name changed to: ${userData.name}`;
+                                }
+
+                                pushSystemMessage(message);
+
+                                clearInput();
                             } else if (command == "block") {
                                 let argument = splitValue.shift();
 
@@ -273,8 +295,7 @@
 
                                 pushSystemMessage(message);
 
-                                document.querySelector("#input").blur();
-                                document.querySelector("#input").value = "";
+                                clearInput();
                             } else if (command == "unblock") {
                                 let argument = splitValue.shift();
 
@@ -294,22 +315,19 @@
 
                                 pushSystemMessage(message);
 
-                                document.querySelector("#input").blur();
-                                document.querySelector("#input").value = "";
+                                clearInput();
                             } else if (command == "clear") {
                                 document.querySelector("#messages-container").replaceChildren();
                             } else {
                                 pushSystemMessage(`/${command} is not a valid command`);
 
-                                document.querySelector("#input").blur();
-                                document.querySelector("#input").value = "";
+                                clearInput();
                             }
                         } else {
                             sendMessageFlag = true;
-                            userData.message = document.querySelector("#input").value;
+                            userData.message = document.querySelector("#input").value.substring(0, 3000);
 
-                            document.querySelector("#input").blur();
-                            document.querySelector("#input").value = "";
+                            clearInput();
                         }
                     }
                 }
@@ -396,7 +414,7 @@
                 onValue(codeRef, snapshot => {
                     let code = snapshot.val();
 
-                    if (lastCode != null && lastCode != code) {
+                    if (code == null ||(lastCode != null && lastCode != code)) {
                         errorFlag = true;
                     } else {
                         lastCode = code;
