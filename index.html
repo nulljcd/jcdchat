@@ -155,7 +155,7 @@
         }
 
         function randomColor() {
-            let color = userIdColorList[userIdColorIndex];
+            let color = userIdColorList[userIdColorIndex % 100];
             userIdColorIndex++;
             return color;
         }
