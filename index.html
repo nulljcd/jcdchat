@@ -21,6 +21,7 @@
             width: 100%;
             height: calc(100% - 30px);
             margin-bottom: 10px;
+            overflow-x: hidden;
             overflow-y: scroll;
         }
 
@@ -35,6 +36,7 @@
             flex-grow: 0;
             font-family: monospace;
             font-size: 12px;
+            font-weight: bolder;
             cursor: default;
         }
 
@@ -65,39 +67,7 @@
 
 <body>
     <div id="main-messages-container">
-        <div id="messages-container">
-            <div class="message">
-                <div class="message-id" style="color: #757ab2;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SYSTEM
-                </div>
-                <div class="message-value">
-                    Welcome to jcdchat: a barebones chat room.<br>
-                    <br>
-                    No accounts. No message history. No censorship.<br>
-                    <br>
-                    <br>
-                    CHAT USER IDENTIFICATION:
-                    <br>
-                    Users are displayed with their chosen name in a random color (same user is different color on
-                    different instances), and their 5 character user id in dark gray.<br>
-                    All users start with their name as "anon", and new names can only be up to 6 characters long.<br>
-                    <br>
-                    DESKTOP INSTRUCTIONS:<br>
-                    - type your message.<br>
-                    - Press Enter to send.<br>
-                    <br>
-                    MOBILE INSTRUCTIONS:<br>
-                    - Tap bottom bar<br>
-                    - Type your message.<br>
-                    - Tap Go to send.<br>
-                    <br>
-                    COMMANDS:<br>
-                    - /name [new_name]<br>
-                    - /block [user_id]<br>
-                    - /unblock [user_id]<br>
-                    - /clear<br>
-                </div>
-            </div>
-        </div>
+        <div id="messages-container"></div>
         <div id="messages-container-scroll-target"></div>
     </div>
     <input type="text" id="input">
@@ -131,10 +101,16 @@
             appId: "1:117048132520:web:62f45feb23dede3aae939d"
         };
 
-        initializeApp(firebaseConfig);
+        let errorFlag = false;
+        let auth, database;
 
-        const auth = getAuth();
-        const database = getDatabase();
+        try {
+            initializeApp(firebaseConfig);
+            auth = getAuth();
+            database = getDatabase();
+        } catch {
+            errorFlag = true;
+        }
 
         let userId, usersRef, userRef;
         let lastSnappedUsersData = {};
@@ -146,8 +122,6 @@
 
         let waitFlag = false;
         let sendMessageFlag = false;
-        let lastTimeNoWait = null;
-        let errorFlag = false;
 
         let userIdColorList = [];
         let userIdColorIndex = 0;
@@ -168,12 +142,6 @@
             }
         }
 
-        function randomColor() {
-            let color = userIdColorList[userIdColorIndex];
-            userIdColorIndex++;
-            return color;
-        }
-
         function hueToRgb(p, q, t) {
             if (t < 0) t += 1;
             if (t > 1) t -= 1;
@@ -183,21 +151,91 @@
             return p;
         }
 
-        for (let i = 0; i < 20; i++) {
-            for (let j = 0; j < 5; j++) {
-                let h = i / 20;
-                let l = lerp(0.90, 0.7, j / (5 - 1));
-
-                const q = l < 0.5 ? l * 1 : l + 1 - l;
-                const p = 2 * l - q;
-                let r = hueToRgb(p, q, h + 1 / 3);
-                let g = hueToRgb(p, q, h);
-                let b = hueToRgb(p, q, h - 1 / 3);
-
-                userIdColorList.push(`rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`);
-            }
+        function randomColor() {
+            let color = userIdColorList[userIdColorIndex];
+            userIdColorIndex++;
+            return color;
         }
-        shuffleArray(userIdColorList);
+
+        function pushSystemMessage(message) {
+            let htmlMessage = document.createElement("div");
+            let htmlMessageId = document.createElement("div");
+            let htmlMessageValue = document.createElement("div");
+
+            htmlMessage.classList.add("message");
+            htmlMessageId.classList.add("message-id");
+            htmlMessageValue.classList.add("message-value");
+
+            htmlMessageId.innerText = "SYSTEM";
+            for (let i = 0; i < 11 - 6; i++) {
+                htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
+            }
+            htmlMessageValue.innerText = message;
+
+            htmlMessageId.style.color = "#757ab2";
+
+            htmlMessage.appendChild(htmlMessageId);
+            htmlMessage.appendChild(htmlMessageValue);
+
+            document.querySelector("#messages-container").appendChild(htmlMessage);
+            document.querySelector("#messages-container-scroll-target").scrollIntoView();
+        }
+
+        function pushUserMessage(snappedUserId, snappedUserData) {
+            let htmlMessage = document.createElement("div");
+            let htmlMessageId = document.createElement("div");
+            let htmlMessageIdName = document.createElement("div");
+            let htmlMessageIdUserId = document.createElement("div");
+            let htmlMessageValue = document.createElement("div");
+
+            htmlMessage.classList.add("message");
+            htmlMessageId.classList.add("message-id");
+            htmlMessageValue.classList.add("message-value");
+
+            htmlMessageIdName.innerText = `${snappedUserData.name}`;
+            htmlMessageIdUserId.innerText = `${snappedUserId.substring(0, 5)}`;
+            for (let i = 0; i < 11 - 5 - snappedUserData.name.length; i++) {
+                htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
+            }
+            htmlMessageValue.innerText = snappedUserData.message;
+
+            htmlMessageId.style.display = "flex";
+            htmlMessageIdName.style.backgroundColor = userIdColors[snappedUserId];
+            htmlMessageIdName.style.color = "#323348";
+            htmlMessageIdUserId.style.color = "#757ab2";
+
+            htmlMessageId.appendChild(htmlMessageIdName);
+            htmlMessageId.appendChild(htmlMessageIdUserId);
+            htmlMessage.appendChild(htmlMessageId);
+            htmlMessage.appendChild(htmlMessageValue);
+
+            document.querySelector("#messages-container").appendChild(htmlMessage);
+            document.querySelector("#messages-container-scroll-target").scrollIntoView();
+        }
+
+        function setup() {
+            for (let i = 0; i < 20; i++) {
+                for (let j = 0; j < 5; j++) {
+                    let h = i / 20;
+                    let l = lerp(0.90, 0.7, j / (5 - 1));
+
+                    const q = l < 0.5 ? l * 1 : l + 1 - l;
+                    const p = 2 * l - q;
+                    let r = hueToRgb(p, q, h + 1 / 3);
+                    let g = hueToRgb(p, q, h);
+                    let b = hueToRgb(p, q, h - 1 / 3);
+
+                    userIdColorList.push(`rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`);
+                }
+            }
+            shuffleArray(userIdColorList);
+
+            pushSystemMessage("Welcome to jcdchat: a barebones chat room.\n\nNo accounts. No message history. No censorship.\n\nCHAT USER IDENTIFICATION:\nUsers are displayed with their chosen name in a random color (same user is different color ondifferent instances), and their 5 character user id in dark gray.\nAll users start with their name as 'anon', and new names can only be up to 6 characters long.\n\nDESKTOP INSTRUCTIONS:\n- type your message.\n- Press Enter to send.\n\nMOBILE INSTRUCTIONS:\n- Tap bottom bar\n- Type your message.\n- Tap Go to send.\n\nCOMMANDS:\n- /name [new_name]\n- /block [user_id]\n- /unblock [user_id]\n- /clear\n");
+        }
+
+        document.querySelector("#input").addEventListener("input", (event) => {
+            document.querySelector("#input").value = document.querySelector("#input").value.replace(/[^\x20-\x7E]/g, '');
+        });
 
         window.addEventListener('keydown', e => {
             if (!errorFlag) {
@@ -216,33 +254,12 @@
 
                                 userData.name = argument.length > 6 ? argument.substring(0, 6) : argument;
 
-                                let htmlMessage = document.createElement("div");
-                                let htmlMessageId = document.createElement("div");
-                                let htmlMessageValue = document.createElement("div");
-
-                                htmlMessage.classList.add("message");
-                                htmlMessageId.classList.add("message-id");
-                                htmlMessageValue.classList.add("message-value");
-
-                                htmlMessageId.innerText = "SYSTEM";
-                                for (let i = 0; i < 11 - 6; i++) {
-                                    htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
-                                }
-                                htmlMessageValue.innerText = `Name changed to: ${userData.name}`;
-
-                                htmlMessageId.style.color = "#757ab2";
-
-                                htmlMessage.appendChild(htmlMessageId);
-                                htmlMessage.appendChild(htmlMessageValue);
-
-                                document.querySelector("#messages-container").appendChild(htmlMessage);
-                                document.querySelector("#messages-container-scroll-target").scrollIntoView();
+                                pushSystemMessage(`Name changed to: ${userData.name}`)
 
                                 document.querySelector("#input").blur();
                                 document.querySelector("#input").value = "";
                             } else if (command == "block") {
                                 let argument = splitValue.shift();
-
 
                                 blockedUserIds[argument] = true;
 
@@ -251,33 +268,12 @@
                                     message += `\n- ${blockedUserId}`;
                                 });
 
-                                let htmlMessage = document.createElement("div");
-                                let htmlMessageId = document.createElement("div");
-                                let htmlMessageValue = document.createElement("div");
-
-                                htmlMessage.classList.add("message");
-                                htmlMessageId.classList.add("message-id");
-                                htmlMessageValue.classList.add("message-value");
-
-                                htmlMessageId.innerText = "SYSTEM";
-                                for (let i = 0; i < 11 - 6; i++) {
-                                    htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
-                                }
-                                htmlMessageValue.innerText = message;
-
-                                htmlMessageId.style.color = "#757ab2";
-
-                                htmlMessage.appendChild(htmlMessageId);
-                                htmlMessage.appendChild(htmlMessageValue);
-
-                                document.querySelector("#messages-container").appendChild(htmlMessage);
-                                document.querySelector("#messages-container-scroll-target").scrollIntoView();
+                                pushSystemMessage(message);
 
                                 document.querySelector("#input").blur();
                                 document.querySelector("#input").value = "";
                             } else if (command == "unblock") {
                                 let argument = splitValue.shift();
-
 
                                 let message;
 
@@ -293,57 +289,14 @@
                                     message = `No such user id exists in list.\nBLOCKED USER IDS:`;
                                 }
 
-                                let htmlMessage = document.createElement("div");
-                                let htmlMessageId = document.createElement("div");
-                                let htmlMessageValue = document.createElement("div");
-
-                                htmlMessage.classList.add("message");
-                                htmlMessageId.classList.add("message-id");
-                                htmlMessageValue.classList.add("message-value");
-
-                                htmlMessageId.innerText = "SYSTEM";
-                                for (let i = 0; i < 11 - 6; i++) {
-                                    htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
-                                }
-                                htmlMessageValue.innerText = message;
-
-                                htmlMessageId.style.color = "#757ab2";
-
-                                htmlMessage.appendChild(htmlMessageId);
-                                htmlMessage.appendChild(htmlMessageValue);
-
-                                document.querySelector("#messages-container").appendChild(htmlMessage);
-                                document.querySelector("#messages-container-scroll-target").scrollIntoView();
+                                pushSystemMessage(message);
 
                                 document.querySelector("#input").blur();
                                 document.querySelector("#input").value = "";
                             } else if (command == "clear") {
                                 document.querySelector("#messages-container").replaceChildren();
-
-                                document.querySelector("#input").blur();
-                                document.querySelector("#input").value = "";
                             } else {
-                                let htmlMessage = document.createElement("div");
-                                let htmlMessageId = document.createElement("div");
-                                let htmlMessageValue = document.createElement("div");
-
-                                htmlMessage.classList.add("message");
-                                htmlMessageId.classList.add("message-id");
-                                htmlMessageValue.classList.add("message-value");
-
-                                htmlMessageId.innerText = "SYSTEM";
-                                for (let i = 0; i < 11 - 6; i++) {
-                                    htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
-                                }
-                                htmlMessageValue.innerText = `/${command} is not a command`;
-
-                                htmlMessageId.style.color = "#757ab2";
-
-                                htmlMessage.appendChild(htmlMessageId);
-                                htmlMessage.appendChild(htmlMessageValue);
-
-                                document.querySelector("#messages-container").appendChild(htmlMessage);
-                                document.querySelector("#messages-container-scroll-target").scrollIntoView();
+                                pushSystemMessage(`/${command} is not a valid command`);
 
                                 document.querySelector("#input").blur();
                                 document.querySelector("#input").value = "";
@@ -360,22 +313,18 @@
             }
         }, true);
 
-        document.querySelector("#input").addEventListener("input", (event) => {
-            document.querySelector("#input").value = document.querySelector("#input").value.replace(/[^\x20-\x7E]/g, '');
-        });
-
-        function run() {
+        function pollLoop() {
             if (!errorFlag) {
                 if (!waitFlag) {
                     if (auth.currentUser) {
                         if (sendMessageFlag) {
                             if (!lastSnappedUsersData[userId]) {
                                 waitFlag = true;
-                                set(userRef, userData).then(() => waitFlag = false);
+                                set(userRef, userData).catch(() => errorFlag = true).then(() => waitFlag = false);
                             } else {
                                 waitFlag = true;
                                 userData.updateFlag = !userData.updateFlag;
-                                update(userRef, userData).then(() => {
+                                update(userRef, userData).catch(() => errorFlag = true).then(() => {
                                     waitFlag = false;
                                     sendMessageFlag = false;
                                 });
@@ -383,15 +332,10 @@
                         }
                     } else {
                         waitFlag = true;
-                        signInAnonymously(auth).then(() => waitFlag = false);
-                    }
-                    lastTimeNoWait = Date.now();
-                } else {
-                    if (Date.now() - lastTimeNoWait > 5000) {
-                        errorFlag = true;
+                        signInAnonymously(auth).catch(() => errorFlag = true).then(() => waitFlag = false);
                     }
                 }
-                requestAnimationFrame(run);
+                requestAnimationFrame(pollLoop);
             } else {
                 remove(userRef).catch(() => { }).then(() => {
                     alert("Error. Page will be disabled until reloaded.");
@@ -399,7 +343,8 @@
             }
         }
 
-        run();
+        setup();
+        pollLoop();
 
         onAuthStateChanged(auth, user => {
             if (user) {
@@ -407,82 +352,38 @@
                 usersRef = ref(database, "users");
                 userRef = ref(database, `users/${userId}`);
 
-                let htmlMessage = document.createElement("div");
-                let htmlMessageId = document.createElement("div");
-                let htmlMessageValue = document.createElement("div");
+                pushSystemMessage(`your user id is: ${userId.substring(0, 5)}`);
 
-                htmlMessage.classList.add("message");
-                htmlMessageId.classList.add("message-id");
-                htmlMessageValue.classList.add("message-value");
-
-                htmlMessageId.innerText = "SYSTEM";
-                for (let i = 0; i < 11 - 6; i++) {
-                    htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
-                }
-                htmlMessageValue.innerText = `your user id is: ${userId.substring(0, 5)}`;
-
-                htmlMessageId.style.color = "#757ab2";
-
-                htmlMessage.appendChild(htmlMessageId);
-                htmlMessage.appendChild(htmlMessageValue);
-
-                document.querySelector("#messages-container").appendChild(htmlMessage);
-                document.querySelector("#messages-container-scroll-target").scrollIntoView();
-
-                get(ref(database, "code")).then((snapshot) => {
+                get(ref(database, "code")).catch(() => errorFlag = true).then((snapshot) => {
                     if (snapshot.val() != null && snapshot.val() != prompt("code: ")) {
                         errorFlag = true;
                     }
                 });
 
+                remove(userRef).catch(() => errorFlag = true);
+
                 onDisconnect(userRef).remove();
 
                 onValue(usersRef, snapshot => {
-                    let snappedUsersData = snapshot.val();
+                    if (!errorFlag) {
+                        let snappedUsersData = snapshot.val();
 
-                    if (snappedUsersData) {
-                        for (const [snappedUserId, snappedUserData] of Object.entries(snappedUsersData)) {
-                            if (!userIdColors[snappedUserId]) {
-                                userIdColors[snappedUserId] = randomColor();
-                            }
-
-                            let lastSnappedUserData = lastSnappedUsersData[snappedUserId];
-
-                            if (lastSnappedUserData != null && lastSnappedUserData.updateFlag != snappedUserData.updateFlag && !blockedUserIds[snappedUserId.substring(0, 5)]) {
-                                let htmlMessage = document.createElement("div");
-                                let htmlMessageId = document.createElement("div");
-                                let htmlMessageIdName = document.createElement("div");
-                                let htmlMessageIdUserId = document.createElement("div");
-                                let htmlMessageValue = document.createElement("div");
-
-                                htmlMessage.classList.add("message");
-                                htmlMessageId.classList.add("message-id");
-                                htmlMessageValue.classList.add("message-value");
-
-                                htmlMessageIdName.innerText = `${snappedUserData.name}`;
-                                htmlMessageIdUserId.innerText = `${snappedUserId.substring(0, 5)}`;
-                                for (let i = 0; i < 11 - 5 - snappedUserData.name.length; i++) {
-                                    htmlMessageId.innerHTML = "&nbsp;" + htmlMessageId.innerHTML;
+                        if (snappedUsersData) {
+                            for (const [snappedUserId, snappedUserData] of Object.entries(snappedUsersData)) {
+                                if (!userIdColors[snappedUserId]) {
+                                    userIdColors[snappedUserId] = randomColor();
                                 }
-                                htmlMessageValue.innerText = snappedUserData.message;
 
-                                htmlMessageId.style.display = "flex";
-                                htmlMessageIdName.style.backgroundColor = userIdColors[snappedUserId];
-                                htmlMessageIdName.style.color = "#323348";
-                                htmlMessageIdUserId.style.color = "#757ab2";
+                                let lastSnappedUserData = lastSnappedUsersData[snappedUserId];
 
-                                htmlMessageId.appendChild(htmlMessageIdName);
-                                htmlMessageId.appendChild(htmlMessageIdUserId);
-                                htmlMessage.appendChild(htmlMessageId);
-                                htmlMessage.appendChild(htmlMessageValue);
-
-                                document.querySelector("#messages-container").appendChild(htmlMessage);
-                                document.querySelector("#messages-container-scroll-target").scrollIntoView();
+                                if (lastSnappedUserData != null && lastSnappedUserData.updateFlag != snappedUserData.updateFlag && !blockedUserIds[snappedUserId.substring(0, 5)]) {
+                                    pushUserMessage(snappedUserId, snappedUserData);
+                                }
                             }
+                            lastSnappedUsersData = snappedUsersData;
+                        } else {
+                            lastSnappedUsersData = {};
                         }
-                        lastSnappedUsersData = snappedUsersData;
-                    } else {
-                        lastSnappedUsersData = {};
                     }
                 });
             }
