@@ -364,9 +364,13 @@
                 }
                 requestAnimationFrame(pollLoop);
             } else {
-                remove(userRef).catch(() => { }).then(() => {
+                try {
+                    remove(userRef).catch(() => {}).then(() => {
+                        alert("Error. Page will be disabled until reloaded.");
+                    });
+                } catch {
                     alert("Error. Page will be disabled until reloaded.");
-                });
+                }
             }
         }
 
