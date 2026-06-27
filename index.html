@@ -248,7 +248,7 @@
             }
             shuffleArray(userIdColorList);
 
-            pushSystemMessage("Welcome to jcdchat: a barebones chat room.\n\nNo accounts. No message history. No censorship.\n\nCHAT USER IDENTIFICATION:\nUsers are displayed with their chosen name in a random color (same user is different color in different instances), and their 5 character user id in dark gray.\nAll users start with their name as 'anon', and new names can only be up to 6 characters long.\n\nDESKTOP INSTRUCTIONS:\n- type your message.\n- Press Enter to send.\n\nMOBILE INSTRUCTIONS:\n- Tap bottom bar\n- Type your message.\n- Tap Go to send.\n\nCOMMANDS:\n- /name [new_name]\n- /block [user_id]\n- /unblock [user_id]\n- /clear\n");
+            pushSystemMessage("Welcome to jcdchat: a barebones chat room.\n\nNo accounts. No message history. No censorship.\n\n\nUSER IDENTIFICATION:\nUsers are displayed with their chosen name in a random color, and their 5 character user id.\n\nAll users start with their name as 'anon', and new names can only be up to 6 characters long.\n\n\nDESKTOP INSTRUCTIONS:\n- type your message.\n- Press Enter to send.\n\n\nMOBILE INSTRUCTIONS:\n- Tap bottom bar\n- Type your message.\n- Tap Go to send.\n\n\nCOMMANDS:\n- /name [new_name]\n- /block [user_id]\n- /unblock [user_id]\n- /clear\n");
         }
 
         document.querySelector("#input").addEventListener("input", (event) => {
@@ -286,12 +286,18 @@
                             } else if (command == "block") {
                                 let argument = splitValue.shift();
 
-                                blockedUserIds[argument] = true;
+                                let message;
 
-                                let message = `ID added to block list: ${argument}.\nBLOCKED USER IDS:`;
-                                Object.keys(blockedUserIds).forEach(blockedUserId => {
-                                    message += `\n- ${blockedUserId}`;
-                                });
+                                if (argument.length == 5 && argument.replace(/[^a-zA-Z0-9]/g, '') == argument) {
+                                    blockedUserIds[argument] = true;
+
+                                    message = `${argument} added to block list.\nBLOCKED USER IDS:`;
+                                    Object.keys(blockedUserIds).forEach(blockedUserId => {
+                                        message += `\n- ${blockedUserId}`;
+                                    });
+                                } else {
+                                    message = `Could not block user: invalid user id.`;
+                                }
 
                                 pushSystemMessage(message);
 
@@ -304,7 +310,7 @@
                                 if (blockedUserIds[argument]) {
                                     delete blockedUserIds[argument];
 
-                                    message = `ID removed from block list: ${argument}.\nBLOCKED USER IDS:`;
+                                    message = `${argument} removed from block list.\nBLOCKED USER IDS:`;
                                     Object.keys(blockedUserIds).forEach(blockedUserId => {
                                         message += `\n- ${blockedUserId}`;
                                     });
@@ -414,7 +420,7 @@
                 onValue(codeRef, snapshot => {
                     let code = snapshot.val();
 
-                    if (code == null ||(lastCode != null && lastCode != code)) {
+                    if (code == null || (lastCode != null && lastCode != code)) {
                         errorFlag = true;
                     } else {
                         lastCode = code;
