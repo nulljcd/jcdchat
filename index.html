@@ -4,7 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
     <title>jcdchat</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap" rel="stylesheet">
+
     <style>
         html {
             height: 100%;
@@ -17,9 +23,22 @@
             height: calc(100% - 20px);
         }
 
+        #bar {
+            height: 30px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-family: "Doto", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 700;
+            font-style: normal;
+            font-size: 24px;
+            background-color: hsl(0, 100%, 80%);
+            color: #323348;
+        }
+
         #main-messages-container {
             width: 100%;
-            height: calc(100% - 30px);
+            height: calc(100% - (40px + 30px));
             margin-bottom: 10px;
             overflow-x: hidden;
             overflow-y: scroll;
@@ -34,9 +53,11 @@
         .message-id {
             margin-right: 10px;
             flex-grow: 0;
-            font-family: monospace;
-            font-size: 12px;
-            font-weight: bolder;
+            font-family: "Doto", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 700;
+            font-style: normal;
+            font-size: 14px;
             cursor: default;
             height: min-content;
         }
@@ -44,8 +65,11 @@
         .message-value {
             margin-right: 10px;
             flex-grow: 1;
-            font-family: monospace;
-            font-size: 12px;
+            font-family: "Doto", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 700;
+            font-style: normal;
+            font-size: 14px;
             color: #cec1e2;
             cursor: default;
         }
@@ -58,15 +82,20 @@
             width: 100%;
             height: 20px;
             cursor: default;
-            font-family: monospace;
-            font-size: 12px;
+            font-family: "Doto", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 700;
+            font-style: normal;
+            font-size: 14px;
             background-color: #252636;
             color: #cec1e2;
+            border-radius: 0;
         }
     </style>
 </head>
 
 <body>
+    <div id="bar">jcdchat</div>
     <div id="main-messages-container">
         <div id="messages-container"></div>
         <div id="messages-container-scroll-target"></div>
@@ -175,7 +204,7 @@
             }
             htmlMessageValue.innerText = message;
 
-            htmlMessageId.style.color = "#757ab2";
+            htmlMessageId.style.color = "#8187c5";
 
             htmlMessage.appendChild(htmlMessageId);
             htmlMessage.appendChild(htmlMessageValue);
@@ -204,7 +233,7 @@
             htmlMessageId.style.display = "flex";
             htmlMessageIdName.style.backgroundColor = userIdColors[snappedUserId];
             htmlMessageIdName.style.color = "#323348";
-            htmlMessageIdUserId.style.color = "#757ab2";
+            htmlMessageIdUserId.style.color = "#8187c5";
 
             htmlMessageId.appendChild(htmlMessageIdName);
             htmlMessageId.appendChild(htmlMessageIdUserId);
@@ -367,7 +396,7 @@
                 requestAnimationFrame(pollLoop);
             } else {
                 try {
-                    remove(userRef).catch(() => {}).then(() => {
+                    remove(userRef).catch(() => { }).then(() => {
                         alert("Error. Page will be disabled until reloaded.");
                     });
                 } catch {
