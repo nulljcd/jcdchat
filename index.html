@@ -23,22 +23,9 @@
             height: calc(100% - 20px);
         }
 
-        #bar {
-            height: 30px;
-            margin-bottom: 10px;
-            text-align: center;
-            font-family: "Doto", sans-serif;
-            font-optical-sizing: auto;
-            font-weight: 700;
-            font-style: normal;
-            font-size: 24px;
-            background-color: hsl(0, 100%, 80%);
-            color: #323348;
-        }
-
         #main-messages-container {
             width: 100%;
-            height: calc(100% - (40px + 30px));
+            height: calc(100% - 30px);
             margin-bottom: 10px;
             overflow-x: hidden;
             overflow-y: scroll;
@@ -95,7 +82,6 @@
 </head>
 
 <body>
-    <div id="bar">jcdchat</div>
     <div id="main-messages-container">
         <div id="messages-container"></div>
         <div id="messages-container-scroll-target"></div>
@@ -204,7 +190,7 @@
             }
             htmlMessageValue.innerText = message;
 
-            htmlMessageId.style.color = "#8187c5";
+            htmlMessageId.style.color = "#8f96db";
 
             htmlMessage.appendChild(htmlMessageId);
             htmlMessage.appendChild(htmlMessageValue);
@@ -233,7 +219,7 @@
             htmlMessageId.style.display = "flex";
             htmlMessageIdName.style.backgroundColor = userIdColors[snappedUserId];
             htmlMessageIdName.style.color = "#323348";
-            htmlMessageIdUserId.style.color = "#8187c5";
+            htmlMessageIdUserId.style.color = "#8f96db";
 
             htmlMessageId.appendChild(htmlMessageIdName);
             htmlMessageId.appendChild(htmlMessageIdUserId);
@@ -277,7 +263,7 @@
             }
             shuffleArray(userIdColorList);
 
-            pushSystemMessage("Welcome to jcdchat: a barebones chat room.\n\nNo accounts. No message history. No censorship.\n\n\nUSER IDENTIFICATION:\nUsers are displayed with their chosen name in a random color, and their 5 character user id.\n\nAll users start with their name as 'anon', and new names can only be up to 6 characters long.\n\n\nDESKTOP INSTRUCTIONS:\n- type your message.\n- Press Enter to send.\n\n\nMOBILE INSTRUCTIONS:\n- Tap bottom bar\n- Type your message.\n- Tap Go to send.\n\n\nCOMMANDS:\n- /name [new_name]\n- /block [user_id]\n- /unblock [user_id]\n- /clear\n");
+            pushSystemMessage("Welcome to jcdchat.\n\nNo accounts. No chat history. No censorship.\n\n\nCOMMANDS:\n- /name <new_name>\n- /block <user_id>\n- /unblock <user_id>\n- /clear\n");
         }
 
         document.querySelector("#input").addEventListener("input", (event) => {
